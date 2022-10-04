@@ -58,6 +58,11 @@ textarea:focus, input:focus, select:focus {
   opacity: 1 !important;
 }
 
+.file-error {
+  font-weight: bold;
+  color: red;
+}
+
 *[placeholder] {
   color: #0E5AE5 !important;
 }
