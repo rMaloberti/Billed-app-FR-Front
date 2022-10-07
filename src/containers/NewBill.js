@@ -44,19 +44,16 @@ export default class NewBill {
         })
         .catch((error) => console.error(error));
     } else {
-      const fileElement = this.document.querySelector(`input[data-testid="file"]`);
+      if (!this.document.querySelector('p.file-error')) {
+        const fileElement = this.document.querySelector(`input[data-testid="file"]`);
 
-      fileElement.value = "";
+        fileElement.value = '';
 
-      const fileError = document.createElement('p');
-      fileError.classList.add('file-error');
-      fileError.textContent = "Veuilez ajouter une image de type PNG, JPG, ou JPEG.";
-
-      if (this.document.querySelector('p.file-error')) {
-        this.document.querySelector('p.file-error').remove();
+        const fileError = document.createElement('p');
+        fileError.classList.add('file-error');
+        fileError.textContent = 'Veuilez ajouter une image de type PNG, JPG, ou JPEG.';
+        fileElement.parentElement.append(fileError);
       }
-
-      fileElement.parentElement.append(fileError);
     }
   };
   handleSubmit = (e) => {
