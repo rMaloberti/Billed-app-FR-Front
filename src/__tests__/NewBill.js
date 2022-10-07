@@ -100,8 +100,41 @@ describe('Given I am connected as an employee', () => {
   });
 
   describe('When I am on NewBill Page and I click on submit button', () => {
-    test('Then I should navigate to Bills Page', () => {});
+    test('Then I should navigate to Bills Page', () => {
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+      const store = null;
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+      window.localStorage.setItem('user', JSON.stringify({ trype: 'Employee' }));
+
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        store,
+        localStorage: window.localStorage,
+      });
+
+      document.body.innerHTML = NewBillUI();
+
+      const form = screen.getByTestId('form-new-bill');
+      const submit = screen.getByText('Envoyer');
+      const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+
+      form.addEventListener('submit', handleSubmit);
+      userEvent.click(submit);
+
+      expect(handleSubmit).toHaveBeenCalled();
+      expect(screen.getByText('Mes notes de frais')).toBeTruthy();
+    });
   });
 });
 
 // test d'integration POST
+describe('Given I am a user connected as an Employee', () => {
+  describe('When I am on NewBill Page and I click on the submit button', () => {
+    test('Then...', () => {
+      
+    });
+  });
+});
