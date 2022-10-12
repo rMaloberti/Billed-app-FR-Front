@@ -1,12 +1,13 @@
 /**
  * @jest-environment jsdom
  */
-
 import { screen, waitFor } from '@testing-library/dom';
 import NewBillUI from '../views/NewBillUI.js';
 import NewBill from '../containers/NewBill.js';
 import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
+import { bills } from '../fixtures/bills.js';
+import mockStore from '../__mocks__/store';
 
 import router from '../app/Router.js';
 import userEvent from '@testing-library/user-event';
@@ -132,9 +133,15 @@ describe('Given I am connected as an employee', () => {
 
 // test d'integration POST
 describe('Given I am a user connected as an Employee', () => {
-  describe('When I am on NewBill Page and I click on the submit button', () => {
-    test('Then...', () => {
-      
+  describe('When I am on NewBill Page and I submit a new one', () => {
+    test('Then it should send the bill from the mock API', async () => {
+      const postSpy = jest.spyOn(mockStore.bills(), 'update');
+      const newBill = await mockStore.bills().update();
+      expect(postSpy).toHaveBeenCalled();
+      expect(newBill.id).toEqual('47qAXb6fIm2zOKkLzMro');
+      expect(newBill.fileUrl).toEqual(
+        'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a'
+      );
     });
   });
 });
