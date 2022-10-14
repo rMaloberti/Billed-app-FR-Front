@@ -1,38 +1,36 @@
 /**
  * @jest-environment jsdom
  */
-import { screen, waitFor } from '@testing-library/dom';
+import { fireEvent, screen, waitFor } from '@testing-library/dom';
+import userEvent from '@testing-library/user-event';
 import NewBillUI from '../views/NewBillUI.js';
 import NewBill from '../containers/NewBill.js';
-import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
 import { localStorageMock } from '../__mocks__/localStorage.js';
-import { bills } from '../fixtures/bills.js';
-import mockStore from '../__mocks__/store';
-
 import router from '../app/Router.js';
-import userEvent from '@testing-library/user-event';
+import { ROUTES, ROUTES_PATH } from '../constants/routes.js';
+import mockStore from '../__mocks__/store';
 
 describe('Given I am connected as an employee', () => {
   describe('When I am on NewBill Page', () => {
-    test('Then the NewBill Form should be displayed', () => {
+    test('Then it should renders a NewBill Form', () => {
       const html = NewBillUI();
       document.body.innerHTML = html;
-      //to-do write assertion
 
-      const newBillForm = screen.getByTestId('form-new-bill');
+      const form = screen.getByTestId('form-new-bill');
 
-      expect(newBillForm).toBeTruthy();
+      expect(form).toBeTruthy();
     });
 
     test('Then mail icon in vertical layout should be highlighted', async () => {
       Object.defineProperty(window, 'localStorage', { value: localStorageMock });
       window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
+
       const root = document.createElement('div');
       root.setAttribute('id', 'root');
       document.body.append(root);
       router();
-
       window.onNavigate(ROUTES_PATH.NewBill);
+
       await waitFor(() => screen.getByTestId('icon-mail'));
       const mailIcon = screen.getByTestId('icon-mail');
 
@@ -40,108 +38,101 @@ describe('Given I am connected as an employee', () => {
     });
   });
 
-  describe('When I am on NewBill Page and I upload an image into the form', () => {
-    test('Then I should be able to read the file name in the field', () => {
-      const onNavigate = (pathname) => {
+  describe('When I am on NewBill Page', () => {
+    beforeEach(() => {
+      window.onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
-      const store = null;
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-      window.localStorage.setItem('user', JSON.stringify({ trype: 'Employee' }));
 
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+      window.localStorage.setItem('user', JSON.stringify({ type: 'Employee' }));
+
+      document.body.innerHTML = NewBillUI();
+    });
+
+    test('Then I upload a file with a correct file type', async () => {
       const newBill = new NewBill({
         document,
-        onNavigate,
-        store,
+        onNavigate: window.onNavigate,
+        store: mockStore,
         localStorage: window.localStorage,
       });
 
-      document.body.innerHTML = NewBillUI();
-
-      const fileInput = screen.getByTestId('file');
-      const file = new File(['hello'], 'hello.png', { type: 'image/png' });
+      const createSpy = jest.spyOn(newBill.store.bills(), 'create');
       const handleChange = jest.fn((e) => newBill.handleChangeFile(e));
 
+      const fileInput = screen.getByTestId('file');
+      const file = new File(['test'], 'test.png', { type: 'image/png' });
       fileInput.addEventListener('change', handleChange);
+
       userEvent.upload(fileInput, file);
 
+      expect(createSpy).toHaveBeenCalled();
       expect(handleChange).toHaveBeenCalled();
-      expect(fileInput.files[0].name).toEqual('hello.png');
+      expect(fileInput.files[0]).toStrictEqual(file);
     });
-  });
 
-  describe('When I am on NewBill Page and I upload a file different than png, jpeg, or jpg', () => {
-    test('Then I should see an error message below the field', () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const store = null;
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-      window.localStorage.setItem('user', JSON.stringify({ trype: 'Employee' }));
-
+    test('Then I upload a file with a wrong file type and get a error message', async () => {
       const newBill = new NewBill({
         document,
-        onNavigate,
-        store,
+        onNavigate: window.onNavigate,
+        store: mockStore,
         localStorage: window.localStorage,
       });
 
-      document.body.innerHTML = NewBillUI();
-
-      const fileInput = screen.getByTestId('file');
-      const file = new File(['hello'], 'hello.svg', { type: 'image/svg+xml' });
       const handleChange = jest.fn((e) => newBill.handleChangeFile(e));
 
+      const fileInput = screen.getByTestId('file');
+      const file = new File(['test'], 'test.pdf', { type: 'application/pdf' });
       fileInput.addEventListener('change', handleChange);
+
       userEvent.upload(fileInput, file);
 
       expect(handleChange).toHaveBeenCalled();
       expect(screen.getByText('Veuilez ajouter une image de type PNG, JPG, ou JPEG.')).toBeTruthy();
     });
-  });
 
-  describe('When I am on NewBill Page and I click on submit button', () => {
-    test('Then I should navigate to Bills Page', () => {
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const store = null;
-      Object.defineProperty(window, 'localStorage', { value: localStorageMock });
-      window.localStorage.setItem('user', JSON.stringify({ trype: 'Employee' }));
-
+    test('Then I submit a new bill and navigate back to the bill page', () => {
       const newBill = new NewBill({
         document,
-        onNavigate,
-        store,
+        onNavigate: window.onNavigate,
+        store: mockStore,
         localStorage: window.localStorage,
       });
 
-      document.body.innerHTML = NewBillUI();
-
       const form = screen.getByTestId('form-new-bill');
-      const submit = screen.getByText('Envoyer');
-      const handleSubmit = jest.fn((e) => newBill.handleSubmit(e));
+      screen.getByTestId('expense-type').value = 'Transports';
+      screen.getByTestId('expense-name').value = 'Vol';
+      screen.getByTestId('datepicker').value = '30-03-2022';
+      screen.getByTestId('amount').value = 399;
+      screen.getByTestId('vat').value = 20;
+      screen.getByTestId('pct').value = 40;
+      screen.getByTestId('commentary').value = 'Test';
 
-      form.addEventListener('submit', handleSubmit);
-      userEvent.click(submit);
+      const handleSubmitForm = jest.fn((e) => newBill.handleSubmit(e));
+      const updateSpy = jest.spyOn(newBill, 'updateBill');
 
-      expect(handleSubmit).toHaveBeenCalled();
+      form.addEventListener('submit', handleSubmitForm);
+
+      fireEvent.submit(form);
+
+      expect(handleSubmitForm).toHaveBeenCalled();
+      expect(updateSpy).toHaveBeenCalled();
       expect(screen.getByText('Mes notes de frais')).toBeTruthy();
     });
   });
 });
 
-// test d'integration POST
-describe('Given I am a user connected as an Employee', () => {
-  describe('When I am on NewBill Page and I submit a new one', () => {
-    test('Then it should send the bill from the mock API', async () => {
-      const postSpy = jest.spyOn(mockStore.bills(), 'update');
-      const newBill = await mockStore.bills().update();
-      expect(postSpy).toHaveBeenCalled();
-      expect(newBill.id).toEqual('47qAXb6fIm2zOKkLzMro');
-      expect(newBill.fileUrl).toEqual(
-        'https://firebasestorage.googleapis.com/v0/b/billable-677b6.a…f-1.jpg?alt=media&token=c1640e12-a24b-4b11-ae52-529112e9602a'
-      );
+// test d'intégration POST
+describe('Given I am a user connected as Employee', () => {
+  describe('When I submit a new bill', () => {
+    test('send bill from mock API POST', async () => {
+      const updateSpy = jest.spyOn(mockStore.bills(), 'update');
+      const post = await mockStore.bills().update();
+
+      expect(updateSpy).toHaveBeenCalled();
+      expect(post.id).toEqual('47qAXb6fIm2zOKkLzMro');
+      expect(post.fileName).toEqual('preview-facture-free-201801-pdf-1.jpg');
     });
   });
 });
